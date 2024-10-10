@@ -1,6 +1,7 @@
 import sys
 import requests
 
+
 print(requests.get('https://example.com').text)
 
 try:

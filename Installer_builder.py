@@ -1,5 +1,8 @@
 import PyInstaller.__main__
 
+
+# Change the values in the python and CMD installer
+
 # Exe installer
 PyInstaller.__main__.run([
     'test_pyinstaller.py',
@@ -12,4 +15,4 @@ PyInstaller.__main__.run([
     '--specpath=exe_builder_directory/spec'
 ])
 
-# Create the different installers based on some Base Values
+# Generate the JSON based on the template
