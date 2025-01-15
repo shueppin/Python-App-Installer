@@ -1,6 +1,5 @@
 @echo off
 cls
-
 setlocal
 
 
@@ -21,29 +20,48 @@ set "requirements_file_url=..."
 set "initial_file_url=..."
 
 
-title %program_name% Installer
+:: Different colors:
+:: - ca = answer color, used for the user's answers to the questions
+:: - ce = error color, used for all errors
+:: - cf = file color, used for files and filepaths.
+:: - ci = information color, used for all the information of other scripts (like the python output)
+:: - cl = link color, used for URLs
+:: - cm = main color, used for most information
+:: - cq = question color, used for questions which the user needs to answer
+:: - cr = reset color, used to reset all color codes
+set "ca=[37m"
+set "ce=[31m"
+set "cf=[33m"
+set "ci=[90m"
+set "cl=[34m"
+set "cm=[36m"
+set "cq=[96m"
+set "cr=[0m"
+
+
 :: Display installer information and ask for permission to download files
+title %program_name% Installer
 echo.
-echo This is the installer for %program_name%.
-echo The source code is available under "%source_code_url%"
-echo The program needs about %program_size% of free space.
+echo %cm%This is the installer for %program_name%.
+echo The source code is available under %cl%%source_code_url%
+echo %cm%The program needs about %program_size% of free space.
 echo.
 echo.
 echo The installer will download Python and PIP from the following URLs:
-echo 1. %python_release_url%
-echo 2. https://bootstrap.pypa.io/get-pip.py
-echo They will only be installed for this program in a separate directory.
+echo 1. %cl%%python_release_url% %cm%
+echo 2. %cl%https://bootstrap.pypa.io/get-pip.py %cm%
+echo Python and PIP will be installed in a separate directory only for this program.
 echo.
 echo The installer will also download the following files for the program to be installed correctly:
-echo 1. %requirements_file_url%
-echo 2. %initial_file_url%
+echo 1. %cl%%requirements_file_url% %cm%
+echo 2. %cl%%initial_file_url% %cm%
 echo.
 
 
 :: Ask for permission to download files from the internet
 :askConsent
 echo.
-set /p userPermission=Do you agree to proceed with the download? (yes/no):
+set /p userPermission=%cq%Do you agree to proceed with the download? (yes/no): %ca%
 if /I "%userPermission%"=="y" goto UserPermission
 if /I "%userPermission%"=="Y" goto UserPermission
 if /I "%userPermission%"=="yes" goto UserPermission
@@ -62,7 +80,7 @@ set "defaultPath=%LOCALAPPDATA%\Programs\%program_name%"
 
 :askInstallationPath
 echo.
-set /p installPath=Enter the installation path or leave empty for default (default: %defaultPath%):
+set /p installPath=%cq%Enter the installation path or leave empty for default (default: %cf%%defaultPath%%cq%): %ca%
 if "%installPath%"=="" set "installPath=%defaultPath%"
 
 
@@ -79,18 +97,17 @@ if not exist "%installPath%" mkdir "%installPath%"
 
 
 :: Download the Python zip file
-set "pythonZipUrl=%python_zip_download_url%"
-set "pythonZipPath=%installPath%\python_downloaded.zip"
 echo.
-echo Downloading Python zip file...
-curl -o "%pythonZipPath%" "%pythonZipUrl%" -s
+echo %cm%Downloading Python zip file from %cl%%python_zip_download_url% %ci%
+set "pythonZipPath=%installPath%\python_downloaded.zip"
+curl -o "%pythonZipPath%" "%python_zip_download_url%" -s
 if errorlevel 1 goto downloadError
 
 
 :: Unpack the zip file into a directory and delete the file.
-set "pythonUnpackDir=%installPath%\python"
 echo.
-echo Unpacking Python zip file...
+echo %cm%Unpacking Python zip file %ci%
+set "pythonUnpackDir=%installPath%\python"
 mkdir "%pythonUnpackDir%"
 tar -xf "%pythonZipPath%" -C "%pythonUnpackDir%"
 if errorlevel 1 goto unpackError
@@ -98,18 +115,18 @@ del "%pythonZipPath%"
 
 
 :: Download "get-pip.py"
+echo.
+echo %cm%Downloading %cf%get-pip.py %ci%
 set "getPipUrl=https://bootstrap.pypa.io/get-pip.py"
 set "getPipPath=%installPath%\get-pip.py"
-echo.
-echo Downloading "get-pip.py"...
 curl -o "%getPipPath%" "%getPipUrl%" -s
 if errorlevel 1 goto downloadError
 
 
 :: Execute "get-pip.py" and remove it afterwards
-set "pythonExe=%installPath%\python\python.exe"
 echo.
-echo Installing pip using the file "get-pip.py"...
+echo %cm%Installing pip using the file %cf%get-pip.py %ci%
+set "pythonExe=%installPath%\python\python.exe"
 "%pythonExe%" "%getPipPath%" --no-warn-script-location
 if errorlevel 1 goto executionError
 del "%getPipPath%"
@@ -117,7 +134,7 @@ del "%getPipPath%"
 
 :: Find the "python---._pth" file. This has to be done using a search for the file extension because the name contains the actual version
 echo.
-echo Searching for the "python._pth" file to allow usage of PIP...
+echo %cm%Modifying the %cf%python._pth %cm%file to allow usage of PIP %ci%
 for %%F in (%pythonUnpackDir%\*._pth) do set "pthFile=%%F"
 if not defined pthFile goto fileNotFoundError
 
@@ -140,7 +157,7 @@ if "%requirements_file_url%"=="" goto noRequirementsFileNeeded
 
 :: Download the requirements file using the filename from the URL
 echo.
-echo Downloading the requirements file from %requirements_file_url%
+echo %cm%Downloading the requirements file from %cl%%requirements_file_url% %ci%
 curl "%requirements_file_url%" --output-dir "%installPath%" -O -s
 if errorlevel 1 goto downloadError
 
@@ -152,12 +169,11 @@ for /f "delims=" %%f in ('dir %installPath% /b /a-d /od') do (
 )
 set "requirementsPath=%installPath%\%requirementsFileName%"
 if errorlevel 1 goto getFileNameError
-echo %requirementsPath%
 
 
 :: Install the requirements from the requirements file
 echo.
-echo Installing requirements from "%requirementsFileName%"...
+echo %cm%Installing requirements from %cf%%requirementsFileName% %ci%
 "%pythonExe%" -m pip install -r "%requirementsPath%" --no-warn-script-location
 if errorlevel 1 goto executionError
 
@@ -166,7 +182,7 @@ if errorlevel 1 goto executionError
 
 :: Download the initial file using the filename from the URL
 echo.
-echo Downloading the initial file from %initial_file_url%
+echo %cm%Downloading the initial file from %cl%%initial_file_url% %ci%
 curl "%initial_file_url%" --output-dir "%installPath%" -O -s
 if errorlevel 1 goto downloadError
 
@@ -178,22 +194,24 @@ for /f "delims=" %%f in ('dir %installPath% /b /a-d /od') do (
 )
 set "initialFilePath=%installPath%\%initialFileName%"
 if errorlevel 1 goto getFileNameError
-echo %initialFilePath%
-
-
-:: Execute the initial file.
-echo Executing "%initialFileName%"...
-"%pythonExe%" "%initialFilePath%" --no-warn-script-location
-if errorlevel 1 goto executionError
 
 
 :: Final message
 echo.
-echo Installation process completed.
+echo %cm%After the next step the installation process is completed.
 echo.
-echo The program is stored at "%installPath%".
+echo The program is stored at %cf%%installPath%
 echo.
-echo You can now follow further instructions from the program if there are any, otherwise you can close this window.
+echo %cm%You can now follow further instructions from the program if there are any, otherwise you can close this window.
+
+
+:: Execute the initial file.
+echo.
+echo %cm%Executing %cf%%initialFileName% %cr%
+"%pythonExe%" "%initialFilePath%" --no-warn-script-location
+if errorlevel 1 goto executionError
+
+
 goto end
 
 
@@ -201,8 +219,8 @@ goto end
 :: Functions
 :customPathConfirmation
 echo.
-echo You entered a custom installation path: %installPath%
-set /p confirmPath=Is this path correct (no typos)? (yes/no):
+echo %cm%You entered a custom installation path: %cf%%installPath%
+set /p confirmPath=%cq%Is this path correct (no typos)? (yes/no): %ca%
 if /I "%confirmPath%"=="y" goto correctPath
 if /I "%confirmPath%"=="Y" goto correctPath
 if /I "%confirmPath%"=="yes" goto correctPath
@@ -218,7 +236,7 @@ goto customPathConfirmation
 :: Error Jump points
 :directoryNotEmpty
 echo.
-echo The selected installation directory is not empty.
+echo %ce%The selected installation directory is not empty.
 echo This could be due to the program already being installed.
 echo Please choose an empty directory.
 goto askInstallationPath
@@ -226,50 +244,50 @@ goto askInstallationPath
 
 :downloadError
 echo.
-echo An error occurred while trying to download this file.
+echo %ce%An error occurred while trying to download this file.
 goto termination
 
 
 :executionError
 echo.
-echo An error occurred while trying to execute this command.
+echo %ce%An error occurred while trying to execute this command.
 goto termination
 
 
 :fileModifyError
 echo.
-echo An error has occurred while trying to modify the content of this file.
+echo %ce%An error has occurred while trying to modify the content of this file.
 goto termination
 
 
 :fileNotFoundError
 echo.
-echo This file couldn't be found.
+echo %ce%This file couldn't be found.
 goto termination
 
 
 :getFileNameError
 echo.
-echo Couldn't get the name of the downloaded file.
+echo %ce%Couldn't get the name of the downloaded file.
 goto termination
 
 
 :noUserPermission
 echo.
-echo Installation terminated since no consent to download was given.
+echo %ce%Installation terminated since no consent to download was given.
 echo If this was done by accident, execute the installer again.
 goto end
 
 
 :unpackError
 echo.
-echo An error occurred while trying to unpack the python interpreter.
+echo %ce%An error occurred while trying to unpack the python interpreter.
 goto termination
 
 
 :: End jump points
 :termination
-echo Installation Terminated.
+echo %ce%Installation Terminated.
 echo.
 echo The Script was terminated due to an error.
 echo To try to install this again please delete the contents of the directory at %installPath%
