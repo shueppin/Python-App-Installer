@@ -63,13 +63,9 @@ echo.
 echo.
 set /p userPermission=%cq%Do you agree to proceed with the download? (yes/no): %ca%
 if /I "%userPermission%"=="y" goto UserPermission
-if /I "%userPermission%"=="Y" goto UserPermission
 if /I "%userPermission%"=="yes" goto UserPermission
-if /I "%userPermission%"=="Yes" goto UserPermission
 if /I "%userPermission%"=="n" goto noUserPermission
-if /I "%userPermission%"=="N" goto noUserPermission
 if /I "%userPermission%"=="no" goto noUserPermission
-if /I "%userPermission%"=="No" goto noUserPermission
 echo Invalid input. Please enter "yes" or "no".
 goto askConsent
 
@@ -208,7 +204,7 @@ echo %cm%You can now follow further instructions from the program if there are a
 :: Execute the initial file.
 echo.
 echo %cm%Executing %cf%%initialFileName% %cr%
-"%pythonExe%" "%initialFilePath%" --no-warn-script-location
+"%pythonExe%" "%initialFilePath%"
 if errorlevel 1 goto executionError
 
 
@@ -222,13 +218,9 @@ echo.
 echo %cm%You entered a custom installation path: %cf%%installPath%
 set /p confirmPath=%cq%Is this path correct (no typos)? (yes/no): %ca%
 if /I "%confirmPath%"=="y" goto correctPath
-if /I "%confirmPath%"=="Y" goto correctPath
 if /I "%confirmPath%"=="yes" goto correctPath
-if /I "%confirmPath%"=="Yes" goto correctPath
 if /I "%confirmPath%"=="n" goto askInstallationPath
-if /I "%confirmPath%"=="N" goto askInstallationPath
 if /I "%confirmPath%"=="no" goto askInstallationPath
-if /I "%confirmPath%"=="No" goto askInstallationPath
 echo Invalid input. Please enter "yes" or "no".
 goto customPathConfirmation
 
