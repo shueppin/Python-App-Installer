@@ -1,3 +1,5 @@
+:: A template for this code can be found at https://github.com/shueppin/Python-App-Installer/blob/main/starting_file/start.cmd
+
 @echo off
 cls
 setlocal

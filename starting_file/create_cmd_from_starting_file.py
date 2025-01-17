@@ -22,29 +22,34 @@ def reformat_line_group(number_of_lines):  # This reformats each line of the mul
 
     # Replace all the needed variables here, because if they were replaced earlier, they would be called "%%var%%"
     output_line = output_line.replace('$show_console$', '%show_console%')
-    output_line = output_line.replace('$start_file$', '%initialFilePath%')
+    output_line = output_line.replace('$start_file$', '%reformattedStartFile%')
     output_line = output_line.replace('$arguments$', '%arguments%')
-    output_line = output_line.replace('$source_code_url$', '%source_code_url%')
+    output_line = output_line.replace('$source_code_url$', '%reformattedUrl%')
     output_line = output_line.replace('$program_name$', '%program_name%')
 
     return output_line
 
 
 print('\nThis script generates commands which can be executed in the installer script to create a starting script in a different file.')
-print('\nTo use this you have to define the following two variables in the beginning of the script (not the %n%).')
+print('\nTo use this you have to define the following two variables in the beginning of the script (not the %n% or the variables after).')
 print('The script also needs the variables "program_name", "source_code_url", "installPath" and "initialFilePath" to already be set.')
 print('\nCommands to copy and paste: \n\n')
 
-# TODO: Add comments on what the variables are
+print(":: - show_console: Whether the installed python script should show an output console or not (This can also be changed later)")
+print(':: - arguments: The arguments with which the downloaded python file is started when running the program')
 print('set "show_console=..."')
 print('set "arguments=..."')
 print()
+
+# The following code sets variables in the installer script. Their contents are later written to the start file.
 print('set "n=& echo"')
+# The following code replaces the content of the variables from the installer script, so it can deal with filenames and URLs containing %
+# This works by replacing every % in the variable with %%
+print('set reformattedUrl=%source_code_url:%%=%%%%%')
+print('set reformattedStartFile=%initialFilePath:%%=%%%%%')
 
-# TODO: Implement a way to set the python path (maybe)
-# TODO: Implement a way to replace any invalid % in the source_code_url
 
-
+# The following code generates individual lines to create the start file.
 original_file = open('start.cmd')
 
 last_line_number = 0
