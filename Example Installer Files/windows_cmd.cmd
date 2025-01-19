@@ -1,3 +1,5 @@
+:: A template for this code can be found at https://github.com/shueppin/Python-App-Installer/blob/main/Example%20Installer%20Files/windows_cmd.cmd
+
 @echo off
 cls
 setlocal
@@ -10,7 +12,9 @@ setlocal
 :: - python_zip_download_url: The URL of the "windows embeddable package (64-bit)" on the release page of the python version.
 :: - requirements_file_url: The URL to your requirements.txt file (only the modules which the initial file needs). Leave empty if not needed.
 :: - initial_file_url: The URL for the file which should be downloaded and run. This could be an updater or an installer written in python.
-:: ATTENTION: Every "%" in all URLs has to be replaced with "%%", otherwise it will not work.
+:: - show_console: Whether the installed python script should show an output console or not (this can theoretically be changed later).
+:: - arguments: The arguments with which the downloaded python file is started when running the program.
+:: ATTENTION: Every "%" in all URLs has to be replaced with "%%", otherwise it will not work. Best would be if there were no "%" in the URL at all.
 set "program_name=..."
 set "source_code_url=..."
 set "program_size=..."
@@ -18,6 +22,8 @@ set "python_release_url=..."
 set "python_zip_download_url=..."
 set "requirements_file_url=..."
 set "initial_file_url=..."
+set "show_console=..."
+set "arguments=..."
 
 
 :: Different colors:
@@ -47,9 +53,10 @@ echo The source code is available under %cl%%source_code_url%
 echo %cm%The program needs about %program_size% of free space.
 echo.
 echo.
-echo The installer will download Python and PIP from the following URLs:
+echo The installer will download Python and PIP and the start file from the following URLs:
 echo 1. %cl%%python_release_url% %cm%
 echo 2. %cl%https://bootstrap.pypa.io/get-pip.py %cm%
+echo 3. %cl%https://raw.githubusercontent.com/shueppin/Python-App-Installer/refs/heads/main/starting_file/start.cmd %cm%
 echo Python and PIP will be installed in a separate directory only for this program.
 echo.
 echo The installer will also download the following files for the program to be installed correctly:
@@ -76,12 +83,27 @@ set "defaultPath=%LOCALAPPDATA%\Programs\%program_name%"
 
 :askInstallationPath
 echo.
+set "installPath="
 set /p installPath=%cq%Enter the installation path or leave empty for default (default: %cf%%defaultPath%%cq%): %ca%
 if "%installPath%"=="" set "installPath=%defaultPath%"
+)
 
 
-:: Ask for confirmation if it is not the default path
-if /I "%installPath%" NEQ "%defaultPath%" goto customPathConfirmation
+:: If the install Path is not the default path then continue with the script and ask for confirmation, otherwise just jump over the confirmation part.
+if /I "%installPath%"=="%defaultPath%" goto correctPath
+
+
+:: Ask for confirmation if the path is not the default path.
+:customPathConfirmation
+echo.
+echo %cm%You entered a custom installation path: %cf%%installPath%
+set /p confirmPath=%cq%Is this path correct (no typos)? (yes/no): %ca%
+if /I "%confirmPath%"=="y" goto correctPath
+if /I "%confirmPath%"=="yes" goto correctPath
+if /I "%confirmPath%"=="n" goto askInstallationPath
+if /I "%confirmPath%"=="no" goto askInstallationPath
+echo Invalid input. Please enter "yes" or "no".
+goto customPathConfirmation
 
 
 :correctPath
@@ -136,14 +158,20 @@ if not defined pthFile goto fileNotFoundError
 
 
 :: Change the "python---._pth" file to be able to use PIP.
-for /f "usebackq tokens=*" %%A in ("%pthFile%") do (
-    echo %%A | findstr /c:"#import site" >nul && (
-        echo import site>>"%pthFile%.tmp"
-    ) || (
-        echo %%A>>"%pthFile%.tmp"
+setlocal enabledelayedexpansion
+(
+    for /f "delims=" %%i in ('type "%pthFile%"') do (
+        set "line=%%i"
+
+        :: Replace the import statement
+        set "line=!line:#import site=import site!"
+
+        echo !line!
     )
-)
+) > "%pthFile%.tmp"
+:: Rename the temporary file to have the original filename
 move /y "%pthFile%.tmp" "%pthFile%" >nul
+endlocal
 if errorlevel 1 goto fileModifyError
 
 
@@ -192,6 +220,43 @@ set "initialFilePath=%installPath%\%initialFileName%"
 if errorlevel 1 goto getFileNameError
 
 
+:: Download the start file
+echo.
+set "startFileUrl=https://raw.githubusercontent.com/shueppin/Python-App-Installer/refs/heads/main/starting_file/start.cmd"
+echo %cm%Downloading starting file from %cl%https://raw.githubusercontent.com/shueppin/Python-App-Installer/refs/heads/main/starting_file/start.cmd %ci%
+set "startFilePath=%installPath%\%program_name%.cmd"
+curl -o "%startFilePath%" "%startFileUrl%" -s
+if errorlevel 1 goto downloadError
+
+
+:: Replace the variables in the start file
+echo.
+echo %cm%Setting correct values in the start file %ci%
+setlocal enabledelayedexpansion
+:: The following code replaces the content of the variables from the installer script, so it can deal with filenames and URLs containing %
+:: This works by replacing every % in the variable with %%
+set reformattedStartFile=!initialFilePath:%%=%%%%!
+set reformattedUrl=!source_code_url:%%=%%%%!
+:: Go through every line of the file and echo them to a temporary file. ATTENTION: The for loop automatically skips empty lines.
+(
+    for /f "delims=" %%i in ('type "%startFilePath%"') do (
+        set "line=%%i"
+
+        :: Replace the values marked with $
+        set "line=!line:$show_console$=%show_console%!"
+        set "line=!line:$start_file$=%reformattedStartFile%!"
+        set "line=!line:$arguments$=%arguments%!"
+        set "line=!line:$source_code_url$=%reformattedUrl%!"
+        set "line=!line:$program_name$=%program_name%!"
+
+        echo !line!
+    )
+) > "%startFilePath%.tmp"
+move /y "%startFilePath%.tmp" "%startFilePath%" >nul
+endlocal
+if errorlevel 1 goto fileModifyError
+
+
 :: Final message
 echo.
 echo %cm%After the next step the installation process is completed.
@@ -199,30 +264,17 @@ echo.
 echo The program is stored at %cf%%installPath%
 echo.
 echo %cm%You can now follow further instructions from the program if there are any, otherwise you can close this window.
-
-
-:: Execute the initial file.
 echo.
-echo %cm%Executing %cf%%initialFileName% %cr%
-"%pythonExe%" "%initialFilePath%"
+
+
+:: Execute the start file.
+echo.
+echo %cm%Executing start file %cr%
+call %startFilePath%
 if errorlevel 1 goto executionError
 
 
 goto end
-
-
-:: Jump points which can't be put in the middle of the script
-:: Functions
-:customPathConfirmation
-echo.
-echo %cm%You entered a custom installation path: %cf%%installPath%
-set /p confirmPath=%cq%Is this path correct (no typos)? (yes/no): %ca%
-if /I "%confirmPath%"=="y" goto correctPath
-if /I "%confirmPath%"=="yes" goto correctPath
-if /I "%confirmPath%"=="n" goto askInstallationPath
-if /I "%confirmPath%"=="no" goto askInstallationPath
-echo Invalid input. Please enter "yes" or "no".
-goto customPathConfirmation
 
 
 :: Error Jump points
@@ -288,6 +340,7 @@ goto end
 
 :end
 echo.
+echo %cr%
 pause
 
 endlocal
