@@ -1,4 +1,4 @@
-:: A template for this code can be found at https://github.com/shueppin/Python-App-Installer/blob/main/Example%20Installer%20Files/windows_cmd.cmd
+:: A template for this code can be found at https://github.com/shueppin/Python-App-Installer/blob/main/installer_templates/windows_cmd.cmd
 
 @echo off
 cls
