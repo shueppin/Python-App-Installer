@@ -5,7 +5,7 @@ import subprocess
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel
 
 
-START_FILE = 'ExampleInterface.cmd'
+START_FILE = 'Example Interface.cmd'
 
 
 class ExampleApp(QWidget):

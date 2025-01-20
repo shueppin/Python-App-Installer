@@ -12,8 +12,10 @@ setlocal
 :: - python_zip_download_url: The URL of the "windows embeddable package (64-bit)" on the release page of the python version.
 :: - requirements_file_url: The URL to your requirements.txt file (only the modules which the initial file needs). Leave empty if not needed.
 :: - initial_file_url: The URL for the file which should be downloaded and run. This could be an updater or an installer written in python.
+:: - shortcut_icon_url: The url for the icon for the shortcut (with no icon URL it will not create the shortcut).
 :: - show_console: Whether the installed python script should show an output console or not (this can theoretically be changed later).
 :: - arguments: The arguments with which the downloaded python file is started when running the program.
+:: - create_program_shortcut: Whether it should create a shortcut in the program directory.
 :: ATTENTION: Every "%" in all URLs has to be replaced with "%%", otherwise it will not work. Best would be if there were no "%" in the URL at all.
 set "program_name=..."
 set "source_code_url=..."
@@ -22,8 +24,10 @@ set "python_release_url=..."
 set "python_zip_download_url=..."
 set "requirements_file_url=..."
 set "initial_file_url=..."
+set "shortcut_icon_url=..."
 set "show_console=..."
 set "arguments=..."
+set "create_program_shortcut=..."
 
 
 :: Different colors:
@@ -39,7 +43,7 @@ set "ca=[37m"
 set "ce=[31m"
 set "cf=[33m"
 set "ci=[90m"
-set "cl=[34m"
+set "cl=[94m"
 set "cm=[36m"
 set "cq=[96m"
 set "cr=[0m"
@@ -257,11 +261,45 @@ endlocal
 if errorlevel 1 goto fileModifyError
 
 
+:: Download the shortcut icon if there is a URL for it
+if "%shortcut_icon_url%"=="" goto endCreatingShortcut
+
+echo.
+echo %cm%Downloading %cf%shortcut_icon.ico %ci%
+set "shortcutIconPath=%installPath%\shortcut_icon.ico"
+curl -o "%shortcutIconPath%" "%shortcut_icon_url%" -s
+if errorlevel 1 goto downloadError
+
+
+:: Create the shortcut in the installation folder
+echo.
+echo %cm%Creating the shortcut in the installation directory %ci%
+set "shortcutFile=%installPath%\%program_name%.url"
+:: Create the file
+echo [InternetShortcut] > %shortcutFile%
+echo URL=file:///%startFilePath% >> %shortcutFile%
+echo IconFile=%shortcutIconPath% >> %shortcutFile%
+echo IconIndex=^0 >> %shortcutFile%
+if errorlevel 1 goto fileModifyError
+
+
+:: Copying the shortcut to the programs folder if the specific variable is set to true
+if not /I "%create_shortcut_in_programs%"=="true" goto endCreatingShortcut
+echo.
+echo %cm%Copying the shortcut to the programs directory %ci%
+copy "%shortcutFile%" "%APPDATA%\Microsoft\Windows\Start Menu\Programs"
+if errorlevel 1 goto fileModifyError
+
+
+:endCreatingShortcut
+
+
 :: Final message
 echo.
 echo %cm%After the next step the installation process is completed.
 echo.
-echo The program is stored at %cf%%installPath%
+echo The program was installed at %cf%%installPath%
+echo a link was also created to the program in
 echo.
 echo %cm%You can now follow further instructions from the program if there are any, otherwise you can close this window.
 echo.
