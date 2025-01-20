@@ -157,7 +157,7 @@ del "%getPipPath%"
 :: Find the "python---._pth" file. This has to be done using a search for the file extension because the name contains the actual version
 echo.
 echo %cm%Modifying the %cf%python._pth %cm%file to allow usage of PIP %ci%
-for %%F in (%pythonUnpackDir%\*._pth) do set "pthFile=%%F"
+for %%F in ("%pythonUnpackDir%\*._pth") do set "pthFile=%%F"
 if not defined pthFile goto fileNotFoundError
 
 
@@ -192,7 +192,7 @@ if errorlevel 1 goto downloadError
 
 :: Get the filename from the downloaded file and set the filepath
 timeout /t 1 /nobreak > nul
-for /f "delims=" %%f in ('dir %installPath% /b /a-d /od') do (
+for /f "delims=" %%f in ('dir "%installPath%" /b /a-d /od') do (
     set "requirementsFileName=%%f"
 )
 set "requirementsPath=%installPath%\%requirementsFileName%"
@@ -217,7 +217,7 @@ if errorlevel 1 goto downloadError
 
 :: Get the filename from the downloaded file and set the filepath
 timeout /t 1 /nobreak > nul
-for /f "delims=" %%f in ('dir %installPath% /b /a-d /od') do (
+for /f "delims=" %%f in ('dir "%installPath%" /b /a-d /od') do (
     set "initialFileName=%%f"
 )
 set "initialFilePath=%installPath%\%initialFileName%"
@@ -265,7 +265,7 @@ if errorlevel 1 goto fileModifyError
 if "%shortcut_icon_url%"=="" goto endCreatingShortcut
 
 echo.
-echo %cm%Downloading %cf%shortcut_icon.ico %ci%
+echo %cm%Downloading %cf%shortcut_icon.ico %cm%from %cl%%shortcut_icon_url% %ci%
 set "shortcutIconPath=%installPath%\shortcut_icon.ico"
 curl -o "%shortcutIconPath%" "%shortcut_icon_url%" -s
 if errorlevel 1 goto downloadError
@@ -276,18 +276,18 @@ echo.
 echo %cm%Creating the shortcut in the installation directory %ci%
 set "shortcutFile=%installPath%\%program_name%.url"
 :: Create the file
-echo [InternetShortcut] > %shortcutFile%
-echo URL=file:///%startFilePath% >> %shortcutFile%
-echo IconFile=%shortcutIconPath% >> %shortcutFile%
-echo IconIndex=^0 >> %shortcutFile%
+echo [InternetShortcut] >> "%shortcutFile%"
+echo URL=file:///%startFilePath% >> "%shortcutFile%"
+echo IconFile=%shortcutIconPath% >> "%shortcutFile%"
+echo IconIndex=0 >> "%shortcutFile%"
 if errorlevel 1 goto fileModifyError
 
 
 :: Copying the shortcut to the programs folder if the specific variable is set to true
-if not /I "%create_shortcut_in_programs%"=="true" goto endCreatingShortcut
+if /I "%create_shortcut_in_programs%" NEQ "true" goto endCreatingShortcut
 echo.
 echo %cm%Copying the shortcut to the programs directory %ci%
-copy "%shortcutFile%" "%APPDATA%\Microsoft\Windows\Start Menu\Programs"
+copy "%shortcutFile%" "%APPDATA%\Microsoft\Windows\Start Menu\Programs" >nul
 if errorlevel 1 goto fileModifyError
 
 
@@ -308,7 +308,7 @@ echo.
 :: Execute the start file.
 echo.
 echo %cm%Executing start file %cr%
-call %startFilePath%
+start "" cmd /c %startFilePath%
 if errorlevel 1 goto executionError
 
 
