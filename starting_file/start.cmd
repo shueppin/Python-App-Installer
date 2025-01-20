@@ -15,6 +15,8 @@ set "program_name=$program_name$"
 set "log_file=%~dp0\log.txt"
 
 
+title Start %program_name%
+
 :: Set the time and date
 for /f "tokens=*" %%d in ('date /t') do (set actualDate=%%d)
 for /f "tokens=*" %%t in ('time /t') do (set actualTime=%%t)
