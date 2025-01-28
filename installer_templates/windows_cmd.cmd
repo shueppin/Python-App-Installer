@@ -96,8 +96,8 @@ if "%installPath%"=="" set "installPath=%defaultPath%"
 :: If the install Path is not the default path then continue with the script and ask for confirmation, otherwise just jump over the confirmation part.
 if /I "%installPath%"=="%defaultPath%" goto correctPath
 
-:: The following line is to prevent crashes because a label is directly after an if command
 echo CRASH PREVENTION >nul
+:: The line before is to prevent crashes because a label is directly after an if command
 
 :: Ask for confirmation if the path is not the default path.
 :customPathConfirmation
@@ -276,13 +276,28 @@ if errorlevel 1 goto downloadError
 :: Create the shortcut in the installation folder
 echo.
 echo %cm%Creating the shortcut in the installation directory %ci%
-set "shortcutFile=%installPath%\%program_name%.url"
-:: Create the file
-echo [InternetShortcut] >> "%shortcutFile%"
-echo URL=file:///%startFilePath% >> "%shortcutFile%"
-echo IconFile=%shortcutIconPath% >> "%shortcutFile%"
-echo IconIndex=0 >> "%shortcutFile%"
+set "createShortcutVBSFile=%installPath%\create_shortcut.vbs"
+set "shortcutFile=%installPath%\%program_name%.lnk"
+:: Create the VBScript that can create windows shortcuts
+echo ' CreateShortcut.vbs >> "%createShortcutVBSFile%"
+echo Dim SHELL, shortcut, shortcutFilePath >> "%createShortcutVBSFile%"
+echo Set SHELL = WScript.CreateObject("WScript.Shell") >> "%createShortcutVBSFile%"
+echo ' Define variables >> "%shortcutFile%"
+echo Set shortcut = shell.CreateShortcut("%shortcutFile%") >> "%createShortcutVBSFile%"
+echo shortcut.TargetPath = "explorer" >> "%createShortcutVBSFile%"
+echo shortcut.Arguments = "%startFilePath%"  >> "%createShortcutVBSFile%"
+echo shortcut.Description = "%program_name%" >> "%createShortcutVBSFile%"
+echo shortcut.IconLocation = "%shortcutIconPath%" >> "%createShortcutVBSFile%"
+echo shortcut.Save >> "%createShortcutVBSFile%"
+echo ' Clean up >> "%createShortcutVBSFile%"
+echo Set shortcut = Nothing >> "%createShortcutVBSFile%"
+echo Set shell = Nothing >> "%createShortcutVBSFile%"
 if errorlevel 1 goto fileModifyError
+
+:: Execute the created VBScript and delete it
+cscript "%createShortcutVBSFile%"
+if errorlevel 1 goto executionError
+del "%createShortcutVBSFile%"
 
 
 :: Copying the shortcut to the programs folder if the specific variable is set to true
