@@ -96,6 +96,8 @@ if "%installPath%"=="" set "installPath=%defaultPath%"
 :: If the install Path is not the default path then continue with the script and ask for confirmation, otherwise just jump over the confirmation part.
 if /I "%installPath%"=="%defaultPath%" goto correctPath
 
+:: The following line is to prevent crashes because a label is directly after an if command
+echo CRASH PREVENTION >nul
 
 :: Ask for confirmation if the path is not the default path.
 :customPathConfirmation
@@ -294,22 +296,24 @@ if errorlevel 1 goto fileModifyError
 :endCreatingShortcut
 
 
-:: Final message
-echo.
-echo %cm%After the next step the installation process is completed.
-echo.
-echo The program was installed at %cf%%installPath%
-echo a link was also created to the program in
-echo.
-echo %cm%You can now follow further instructions from the program if there are any, otherwise you can close this window.
-echo.
-
-
 :: Execute the start file.
 echo.
 echo %cm%Executing start file %cr%
-start "" cmd /c %startFilePath%
+start "" cmd /c "%startFilePath%"
 if errorlevel 1 goto executionError
+
+
+:: Final message
+echo.
+echo.
+echo.
+echo %cm%After the next step the installation process is completed.
+echo.
+echo %cm%The program was installed at %cf%%installPath%
+echo %cm%A link to the program was also created at %cf%%APPDATA%\Microsoft\Windows\Start Menu\Programs
+echo.
+echo %cm%You can now follow further instructions from the program if there are any, otherwise you can close this window.
+echo.
 
 
 goto end
