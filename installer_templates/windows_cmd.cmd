@@ -279,11 +279,11 @@ echo %cm%Creating the shortcut in the installation directory %ci%
 set "createShortcutVBSFile=%installPath%\create_shortcut.vbs"
 set "shortcutFile=%installPath%\%program_name%.lnk"
 :: Create the VBScript that can create windows shortcuts
-echo ' CreateShortcut.vbs >> "%createShortcutVBSFile%"
+echo ' Define variables >> "%createShortcutVBSFile%"
 echo Dim SHELL, shortcut, shortcutFilePath >> "%createShortcutVBSFile%"
 echo Set SHELL = WScript.CreateObject("WScript.Shell") >> "%createShortcutVBSFile%"
-echo ' Define variables >> "%shortcutFile%"
 echo Set shortcut = shell.CreateShortcut("%shortcutFile%") >> "%createShortcutVBSFile%"
+echo ' Define shortcut values >> "%createShortcutVBSFile%"
 echo shortcut.TargetPath = "explorer" >> "%createShortcutVBSFile%"
 echo shortcut.Arguments = "%startFilePath%"  >> "%createShortcutVBSFile%"
 echo shortcut.Description = "%program_name%" >> "%createShortcutVBSFile%"
@@ -322,7 +322,7 @@ if errorlevel 1 goto executionError
 echo.
 echo.
 echo.
-echo %cm%After the next step the installation process is completed.
+echo %cm%The installation process is completed.
 echo.
 echo %cm%The program was installed at %cf%%installPath%
 echo %cm%A link to the program was also created at %cf%%APPDATA%\Microsoft\Windows\Start Menu\Programs

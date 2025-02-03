@@ -5,6 +5,7 @@ The CMD File can be configured to install a shortcut on the user's Windows App M
 ## Using a finished CMD file
 Download the finished CMD file, which should be provided by the program or app you want to install (An example can be found [here](https://github.com/shueppin/Python-App-Installer/tree/main/example_installer)).  
 Then execute this file and follow the instructions provided.
+An example CMD file can be found [here](https://github.com/shueppin/Python-App-Installer/blob/main/example_installer/example_windows_cmd.cmd)
 
 ## Creating your own CMD file
 1. Download the CMD template form [here](https://github.com/shueppin/Python-App-Installer/tree/main/installer_templates).  
