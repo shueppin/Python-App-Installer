@@ -2,6 +2,8 @@
 This project contains a Windows CMD file which can be used to install a Python file including a portable version of Python and all the requirements.  
 The CMD File can be configured to install a shortcut on the user's Windows App Menu.
 
+This whole script can be used to be able to publish open source code as open source without needing to create an executable.
+
 ## Using a finished CMD file
 Download the finished CMD file, which should be provided by the program or app you want to install (An example can be found [here](https://github.com/shueppin/Python-App-Installer/tree/main/example_installer)).  
 Then execute this file and follow the instructions provided.
