@@ -9,14 +9,6 @@ setlocal
 cd %~dp0
 
 
-:: Check whether the script was restarted. If so, then pause for a little bit
-if "%1"=="restart" (
-echo Restarting script ...
-timeout /t 5 /nobreak
-)
-:: TODO Find a way around the "A different process is already using this file" error
-
-
 :: These values are set by the installer, but they can be changed if needed.
 set "debug=false"
 set "show_console=$show_console$"

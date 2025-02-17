@@ -284,10 +284,13 @@ echo Dim SHELL, shortcut, shortcutFilePath >> "%createShortcutVBSFile%"
 echo Set SHELL = WScript.CreateObject("WScript.Shell") >> "%createShortcutVBSFile%"
 echo Set shortcut = shell.CreateShortcut("%shortcutFile%") >> "%createShortcutVBSFile%"
 echo ' Define shortcut values >> "%createShortcutVBSFile%"
-echo shortcut.TargetPath = "explorer" >> "%createShortcutVBSFile%"
-echo shortcut.Arguments = "%startFilePath%"  >> "%createShortcutVBSFile%"
-echo shortcut.Description = "%program_name%" >> "%createShortcutVBSFile%"
+:: This call to cmd is needed so the shortcut can be fixed to the taskbar. We can't use the explorer for this, because its icon in the Taskmanager will bug out.
+echo shortcut.TargetPath = "cmd" >> "%createShortcutVBSFile%"
+echo shortcut.Arguments = "/c call %startFilePath%"  >> "%createShortcutVBSFile%"
+echo ' The shortcut needs to call an exe file so it can be fixed to the taskbar. That's why cmd is used. If we were to use explorer.exe, it would have small icon bugs. >> "%createShortcutVBSFile%"
+echo shortcut.Description = "Start %program_name% using CMD" >> "%createShortcutVBSFile%"
 echo shortcut.IconLocation = "%shortcutIconPath%" >> "%createShortcutVBSFile%"
+echo shortcut.WorkingDirectory = "%installPath%" >> "%createShortcutVBSFile%"
 echo shortcut.Save >> "%createShortcutVBSFile%"
 echo ' Clean up >> "%createShortcutVBSFile%"
 echo Set shortcut = Nothing >> "%createShortcutVBSFile%"
@@ -297,7 +300,6 @@ if errorlevel 1 goto fileModifyError
 :: Execute the created VBScript and delete it
 cscript "%createShortcutVBSFile%"
 if errorlevel 1 goto executionError
-del "%createShortcutVBSFile%"
 
 
 :: Copying the shortcut to the programs folder if the specific variable is set to true

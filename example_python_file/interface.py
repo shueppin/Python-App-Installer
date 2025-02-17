@@ -2,10 +2,10 @@ import sys
 import re
 import webbrowser
 import subprocess
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton
 
 
-START_FILE = 'Example Interface.cmd'
+START_FILE = 'Example Interface.lnk'  # Use the lnk file (similar to the one in the programs folder) to prevent any errors because files are already used.
 
 
 class ExampleApp(QWidget):
@@ -50,7 +50,7 @@ class ExampleApp(QWidget):
     @staticmethod
     def restart_program():
         print("Restarting program...")
-        subprocess.Popen(['start', '', START_FILE], shell=True)
+        subprocess.Popen([START_FILE], shell=True)
         sys.exit()
 
     @staticmethod
