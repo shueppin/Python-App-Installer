@@ -286,7 +286,7 @@ echo Set shortcut = shell.CreateShortcut("%shortcutFile%") >> "%createShortcutVB
 echo ' Define shortcut values >> "%createShortcutVBSFile%"
 :: This call to cmd is needed so the shortcut can be fixed to the taskbar. We can't use the explorer for this, because its icon in the Taskmanager will bug out.
 echo shortcut.TargetPath = "cmd" >> "%createShortcutVBSFile%"
-echo shortcut.Arguments = "/c call %startFilePath%"  >> "%createShortcutVBSFile%"
+echo shortcut.Arguments = "/c call ""%startFilePath%"""  >> "%createShortcutVBSFile%"
 echo ' The shortcut needs to call an exe file so it can be fixed to the taskbar. That's why cmd is used. If we were to use explorer.exe, it would have small icon bugs. >> "%createShortcutVBSFile%"
 echo shortcut.Description = "Start %program_name% using CMD" >> "%createShortcutVBSFile%"
 echo shortcut.IconLocation = "%shortcutIconPath%" >> "%createShortcutVBSFile%"

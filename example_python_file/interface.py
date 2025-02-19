@@ -2,17 +2,25 @@ import sys
 import re
 import webbrowser
 import subprocess
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton
+import os
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel
 
 
-START_FILE = 'Example Interface.lnk'  # Use the lnk file (similar to the one in the programs folder) to prevent any errors because files are already used.
+# Get the directory of the current Python file
+CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+
+# Specify the file name
+RESTART_FILE_NAME = 'Example Interface.lnk'
+
+# Create the full path to the file
+RESTART_FILE = os.path.join(CURRENT_DIRECTORY, RESTART_FILE_NAME)  # Use the lnk file (similar to the one in the programs folder) to prevent any errors because files are already used.
 
 
 class ExampleApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
-        with open(START_FILE) as file:
+        with open(os.path.join(CURRENT_DIRECTORY, 'Example Interface.cmd')) as file:
             for line in file:
                 if 'set "source_code_url=' in line:
                     # Use a regular expression to find the value
@@ -50,7 +58,7 @@ class ExampleApp(QWidget):
     @staticmethod
     def restart_program():
         print("Restarting program...")
-        subprocess.Popen([START_FILE], shell=True)
+        subprocess.Popen([RESTART_FILE], shell=True)
         sys.exit()
 
     @staticmethod
@@ -59,7 +67,6 @@ class ExampleApp(QWidget):
 
 
 if __name__ == '__main__':
-    print(sys.executable)
     app = QApplication(sys.argv)
     ex = ExampleApp()
     sys.exit(app.exec())
