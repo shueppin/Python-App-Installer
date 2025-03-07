@@ -20,14 +20,6 @@ class ExampleApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
-        with open(os.path.join(CURRENT_DIRECTORY, 'Example Interface.cmd')) as file:
-            for line in file:
-                if 'set "source_code_url=' in line:
-                    # Use a regular expression to find the value
-                    match = re.search(r'set "source_code_url=(.*?)"', line)
-                    if match:
-                        self.source_code_url = match.group(1)
-                        break  # Exit the loop once we find the first match
 
     def initUI(self):
         self.setWindowTitle('PyQt6 Example')
@@ -52,8 +44,9 @@ class ExampleApp(QWidget):
         self.setLayout(layout)
         self.show()
 
-    def open_source_code(self):
-        webbrowser.open(self.source_code_url)
+    @staticmethod
+    def open_source_code():
+        webbrowser.open('https://github.com/shueppin/Python-App-Installer/blob/main/example_python_file/interface.py')
 
     @staticmethod
     def restart_program():
