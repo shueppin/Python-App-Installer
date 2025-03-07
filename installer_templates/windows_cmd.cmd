@@ -12,7 +12,7 @@ setlocal
 :: - python_zip_download_url: The URL of the "windows embeddable package (64-bit)" on the release page of the python version.
 :: - requirements_file_url: The URL to your requirements.txt file (only the modules which the initial file needs). Leave empty if not needed.
 :: - initial_file_url: The URL for the file which should be downloaded and run. This could be an updater or an installer written in python.
-:: - shortcut_icon_url: The url for the icon for the shortcut (with no icon URL it will not create the shortcut).
+:: - shortcut_icon_url: The url for the icon for the shortcut (with no icon URL it will just create a simple shortcut with the python icon).
 :: - show_console: Whether the installed python script should show an output console or not (this can theoretically be changed later).
 :: - arguments: The arguments with which the downloaded python file is started when running the program.
 :: - create_shortcut_in_programs: Whether it should create a shortcut in the programs directory.
@@ -57,10 +57,9 @@ echo The source code is available under %cl%%source_code_url%
 echo %cm%The program needs about %program_size% of free space.
 echo.
 echo.
-echo The installer will download Python and PIP and the start file from the following URLs:
+echo The installer will download Python and PIP from the following URLs:
 echo 1. %cl%%python_release_url% %cm%
 echo 2. %cl%https://bootstrap.pypa.io/get-pip.py %cm%
-echo 3. %cl%https://raw.githubusercontent.com/shueppin/Python-App-Installer/refs/heads/main/starting_file/start.cmd %cm%
 echo Python and PIP will be installed in a separate directory only for this program.
 echo.
 echo The installer will also download the following files for the program to be installed correctly:
@@ -260,13 +259,16 @@ if errorlevel 1 goto fileModifyError
 
 
 :: Download the shortcut icon if there is a URL for it
-if "%shortcut_icon_url%"=="" goto endCreatingShortcut
+if "%shortcut_icon_url%"=="" goto noShortcutIcon
 
 echo.
 echo %cm%Downloading %cf%shortcut_icon.ico %cm%from %cl%%shortcut_icon_url% %ci%
 set "shortcutIconPath=%installPath%\shortcut_icon.ico"
 curl -o "%shortcutIconPath%" "%shortcut_icon_url%" -s
 if errorlevel 1 goto downloadError
+
+
+:noShortcutIcon
 
 
 :: Create the shortcut in the installation folder
@@ -279,7 +281,7 @@ set "shortcutFile=%installPath%\%program_name%.lnk"
 echo ' Define variables >> "%createShortcutVBSFile%"
 echo Dim SHOW_CONSOLE, SHELL, shortcut >> "%createShortcutVBSFile%"
 echo. >> "%createShortcutVBSFile%"
-echo Set SHOW_CONSOLE = %show_console% >> "%createShortcutVBSFile%"
+echo SHOW_CONSOLE = %show_console% >> "%createShortcutVBSFile%"
 echo. >> "%createShortcutVBSFile%"
 echo Set SHELL = WScript.CreateObject("WScript.Shell") >> "%createShortcutVBSFile%"
 echo Set shortcut = shell.CreateShortcut("%shortcutFile%") >> "%createShortcutVBSFile%"
@@ -292,7 +294,8 @@ echo shortcut.TargetPath = "%pythonUnpackDir%\pythonw.exe" >> "%createShortcutVB
 echo End If >> "%createShortcutVBSFile%"
 echo. >> "%createShortcutVBSFile%"
 echo shortcut.Description = "%program_name%" >> "%createShortcutVBSFile%"
-echo shortcut.IconLocation = "%shortcutIconPath%" >> "%createShortcutVBSFile%"
+:: The following lihne checks whether there is a shortcut icon, and if not it just creates the shortcut without this.
+if "%shortcut_icon_url%" NEQ "" echo shortcut.IconLocation = "%shortcutIconPath%" >> "%createShortcutVBSFile%"
 echo shortcut.WorkingDirectory = "%installPath%" >> "%createShortcutVBSFile%"
 echo shortcut.Save >> "%createShortcutVBSFile%"
 echo. >> "%createShortcutVBSFile%"
@@ -308,14 +311,14 @@ if errorlevel 1 goto executionError
 
 
 :: Copying the shortcut to the programs folder if the specific variable is set to true
-if /I "%create_shortcut_in_programs%" NEQ "true" goto endCreatingShortcut
+if /I "%create_shortcut_in_programs%" NEQ "true" goto noShortcutInPrograms
 echo.
 echo %cm%Copying the shortcut to the programs directory %ci%
 copy "%shortcutFile%" "%APPDATA%\Microsoft\Windows\Start Menu\Programs" >nul
 if errorlevel 1 goto fileModifyError
 
 
-:endCreatingShortcut
+:noShortcutInPrograms
 
 
 :: Final message
