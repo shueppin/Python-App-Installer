@@ -15,7 +15,7 @@ setlocal
 :: - shortcut_icon_url: The url for the icon for the shortcut (with no icon URL it will not create the shortcut).
 :: - show_console: Whether the installed python script should show an output console or not (this can theoretically be changed later).
 :: - arguments: The arguments with which the downloaded python file is started when running the program.
-:: - create_program_shortcut: Whether it should create a shortcut in the program directory.
+:: - create_shortcut_in_programs: Whether it should create a shortcut in the programs directory.
 :: ATTENTION: Every "%" in all URLs has to be replaced with "%%", otherwise it will not work. Best would be if there were no "%" in the URL at all.
 set "program_name=..."
 set "source_code_url=..."
@@ -27,7 +27,7 @@ set "initial_file_url=..."
 set "shortcut_icon_url=..."
 set "show_console=..."
 set "arguments=..."
-set "create_program_shortcut=..."
+set "create_shortcut_in_programs=..."
 
 
 :: Different colors:
@@ -150,7 +150,7 @@ if errorlevel 1 goto downloadError
 :: Execute "get-pip.py" and remove it afterwards
 echo.
 echo %cm%Installing pip using the file %cf%get-pip.py %ci%
-set "pythonExe=%installPath%\python\python.exe"
+set "pythonExe=%pythonUnpackDir%\python.exe"
 "%pythonExe%" "%getPipPath%" --no-warn-script-location
 if errorlevel 1 goto executionError
 del "%getPipPath%"
@@ -226,40 +226,36 @@ set "initialFilePath=%installPath%\%initialFileName%"
 if errorlevel 1 goto getFileNameError
 
 
-:: Download the start file
+:: Change the show_console variable so it is in the format which Python and VBS want
+if /I "%show_console%"=="true" (
+    set "show_console=True"
+) else (
+    set "show_console=False"
+)
+
+
+:: Configure the python.exe file to run the main program by using an extra file called "sitecustomize.py"
 echo.
-set "startFileUrl=https://raw.githubusercontent.com/shueppin/Python-App-Installer/refs/heads/main/starting_file/start.cmd"
-echo %cm%Downloading starting file from %cl%https://raw.githubusercontent.com/shueppin/Python-App-Installer/refs/heads/main/starting_file/start.cmd %ci%
-set "startFilePath=%installPath%\%program_name%.cmd"
-curl -o "%startFilePath%" "%startFileUrl%" -s
-if errorlevel 1 goto downloadError
+echo %cm%Creating %cf%sitecustomize.py %cm%to run the Program when executing %cf%python.exe %cm% or %cf%pythonw.exe %ci%
+set "sitecustomizePath=%pythonUnpackDir%\sitecustomize.py"
 
+:: Create the Python file
+echo import sys >> "%sitecustomizePath%"
+echo.  >> "%sitecustomizePath%"
+echo SHOW_CONSOLE = %show_console% >> "%sitecustomizePath%"
+echo.  >> "%sitecustomizePath%"
+echo # Check for passed arguments. If the exe file is used to run a python file, it will have some arguments, thus it should not call itself again. >> "%sitecustomizePath%"
+echo if sys.argv == ['']: >> "%sitecustomizePath%"
+echo     import subprocess >> "%sitecustomizePath%"
+echo. >> "%sitecustomizePath%"
+echo     # Use subprocess to run the script with or without a console window >> "%sitecustomizePath%"
+echo     if SHOW_CONSOLE: >> "%sitecustomizePath%"
+echo         subprocess.Popen([r"%pythonUnpackDir%\python.exe", r"%initialFilePath%"], creationflags=subprocess.CREATE_NEW_CONSOLE) >> "%sitecustomizePath%"
+echo     else: >> "%sitecustomizePath%"
+echo         subprocess.Popen([r"%pythonUnpackDir%\pythonw.exe", r"%initialFilePath%"]) >> "%sitecustomizePath%"
+echo.  >> "%sitecustomizePath%"
+echo     sys.exit() >> "%sitecustomizePath%"
 
-:: Replace the variables in the start file
-echo.
-echo %cm%Setting correct values in the start file %ci%
-setlocal enabledelayedexpansion
-:: The following code replaces the content of the variables from the installer script, so it can deal with filenames and URLs containing %
-:: This works by replacing every % in the variable with %%
-set reformattedStartFile=!initialFilePath:%%=%%%%!
-set reformattedUrl=!source_code_url:%%=%%%%!
-:: Go through every line of the file and echo them to a temporary file. ATTENTION: The for loop automatically skips empty lines.
-(
-    for /f "delims=" %%i in ('type "%startFilePath%"') do (
-        set "line=%%i"
-
-        :: Replace the values marked with $
-        set "line=!line:$show_console$=%show_console%!"
-        set "line=!line:$start_file$=%reformattedStartFile%!"
-        set "line=!line:$arguments$=%arguments%!"
-        set "line=!line:$source_code_url$=%reformattedUrl%!"
-        set "line=!line:$program_name$=%program_name%!"
-
-        echo !line!
-    )
-) > "%startFilePath%.tmp"
-move /y "%startFilePath%.tmp" "%startFilePath%" >nul
-endlocal
 if errorlevel 1 goto fileModifyError
 
 
@@ -278,23 +274,32 @@ echo.
 echo %cm%Creating the shortcut in the installation directory %ci%
 set "createShortcutVBSFile=%installPath%\create_shortcut.vbs"
 set "shortcutFile=%installPath%\%program_name%.lnk"
+
 :: Create the VBScript that can create windows shortcuts
 echo ' Define variables >> "%createShortcutVBSFile%"
-echo Dim SHELL, shortcut, shortcutFilePath >> "%createShortcutVBSFile%"
+echo Dim SHOW_CONSOLE, SHELL, shortcut >> "%createShortcutVBSFile%"
+echo. >> "%createShortcutVBSFile%"
+echo Set SHOW_CONSOLE = %show_console% >> "%createShortcutVBSFile%"
+echo. >> "%createShortcutVBSFile%"
 echo Set SHELL = WScript.CreateObject("WScript.Shell") >> "%createShortcutVBSFile%"
 echo Set shortcut = shell.CreateShortcut("%shortcutFile%") >> "%createShortcutVBSFile%"
+echo. >> "%createShortcutVBSFile%"
 echo ' Define shortcut values >> "%createShortcutVBSFile%"
-:: This call to cmd is needed so the shortcut can be fixed to the taskbar. We can't use the explorer for this, because its icon in the Taskmanager will bug out.
-echo shortcut.TargetPath = "cmd" >> "%createShortcutVBSFile%"
-echo shortcut.Arguments = "/c call ""%startFilePath%"""  >> "%createShortcutVBSFile%"
-echo ' The shortcut needs to call an exe file so it can be fixed to the taskbar. That's why cmd is used. If we were to use explorer.exe, it would have small icon bugs. >> "%createShortcutVBSFile%"
-echo shortcut.Description = "Start %program_name% using CMD" >> "%createShortcutVBSFile%"
+echo If SHOW_CONSOLE Then >> "%createShortcutVBSFile%"
+echo shortcut.TargetPath = "%pythonUnpackDir%\python.exe" >> "%createShortcutVBSFile%"
+echo Else >> "%createShortcutVBSFile%"
+echo shortcut.TargetPath = "%pythonUnpackDir%\pythonw.exe" >> "%createShortcutVBSFile%"
+echo End If >> "%createShortcutVBSFile%"
+echo. >> "%createShortcutVBSFile%"
+echo shortcut.Description = "%program_name%" >> "%createShortcutVBSFile%"
 echo shortcut.IconLocation = "%shortcutIconPath%" >> "%createShortcutVBSFile%"
 echo shortcut.WorkingDirectory = "%installPath%" >> "%createShortcutVBSFile%"
 echo shortcut.Save >> "%createShortcutVBSFile%"
+echo. >> "%createShortcutVBSFile%"
 echo ' Clean up >> "%createShortcutVBSFile%"
 echo Set shortcut = Nothing >> "%createShortcutVBSFile%"
 echo Set shell = Nothing >> "%createShortcutVBSFile%"
+
 if errorlevel 1 goto fileModifyError
 
 :: Execute the created VBScript and delete it
@@ -313,13 +318,6 @@ if errorlevel 1 goto fileModifyError
 :endCreatingShortcut
 
 
-:: Execute the start file.
-echo.
-echo %cm%Executing start file %cr%
-start "" cmd /c "%startFilePath%"
-if errorlevel 1 goto executionError
-
-
 :: Final message
 echo.
 echo.
@@ -327,10 +325,19 @@ echo.
 echo %cm%The installation process is completed.
 echo.
 echo %cm%The program was installed at %cf%%installPath%
-echo %cm%A link to the program was also created at %cf%%APPDATA%\Microsoft\Windows\Start Menu\Programs
+if /I "%create_shortcut_in_programs%"=="true" echo %cm%A shortcut to the program was also created at %cf%%APPDATA%\Microsoft\Windows\Start Menu\Programs
 echo.
-echo %cm%You can now follow further instructions from the program if there are any, otherwise you can close this window.
+echo %cm%You can now follow further instructions from the program if there are any.
+echo The program will be started soon, then you can close this window.
 echo.
+
+
+:: Execute the start file.
+timeout /t 5
+echo.
+if /I "%show_console%"=="true" "%pythonUnpackDir%\python.exe" "%initialFilePath%"
+if /I "%show_console%" NEQ "true" "%pythonUnpackDir%\pythonw.exe" "%initialFilePath%"
+if errorlevel 1 goto executionError
 
 
 goto end
